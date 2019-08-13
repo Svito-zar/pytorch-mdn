@@ -1,61 +1,57 @@
+"""
+A script for applying MDN to generate MNIST digits
+author: Taras Kucherenko
+contact: tarask@kth.se
+"""
+
 import torch.nn as nn
 import torch.optim as optim
 import mdn
 import torch
 from torchvision import datasets, transforms
-import numpy as np
 
 import matplotlib.pyplot as plt
 
 torch.set_default_tensor_type('torch.FloatTensor')
 
 batch_size = 1000
+num_epochs = 10
 
 
-def test(model, test_loader):
+def plot(ground_truth, produced_images, epoch):
+    """
+    Plot 3 different pictures: ground truth digits
+    alongside with the sample from the model for that digit
 
-    error_sum = 0
+    Args:
+        ground_truth:     ground truth images from the MNIST dataset
+        produced_images:  digits sampled from the MDN
+        epoch:            at which epoch are we visualizing
 
-    for batch_idx, (minibatch, labels) in enumerate(test_loader):
+    Returns:
+        nothing, saves plots in the 'figures' folder
 
-        minibatch = minibatch.reshape(batch_size, 1, 784)
+    """
 
-        labels = labels.reshape(batch_size,1)
-        # [[numb == labels[i] for numb in range(10)] for i in range(batch_size)]
-        labels = labels.int()
-
-        pi, sigma, mu = model(minibatch)
-
-        samples = mdn.sample(pi, sigma, mu).int()
-
-        error = (samples != labels)
-
-        error_sum =  error_sum +  error.sum()
-
-    return 1 - error_sum.item()/(len(test_loader)*batch_size)
-
-
-def plot(gt, images, epoch):
-
-    # Plot
     fig = plt.figure()
+    # Make two raws with three image in each
     ax1 = fig.add_subplot(2, 3, 1)
-    ax1.imshow(gt[0][0], cmap='gray')
+    ax1.imshow(ground_truth[0][0], cmap='gray')
     plt.title('Original')
     ax2 = fig.add_subplot(2, 3, 2)
-    ax2.imshow(gt[1][0], cmap='gray')
+    ax2.imshow(ground_truth[1][0], cmap='gray')
     plt.title('Original')
     ax3 = fig.add_subplot(2, 3, 3)
-    ax3.imshow(gt[2][0], cmap='gray')
+    ax3.imshow(ground_truth[2][0], cmap='gray')
     plt.title('Original')
     ax4 = fig.add_subplot(2, 3, 4)
-    ax4.imshow(images[0].reshape((28,28)), cmap='gray')
+    ax4.imshow(produced_images[0].reshape((28,28)), cmap='gray')
     plt.title('Sampled')
     ax5 = fig.add_subplot(2, 3, 5)
-    ax5.imshow(images[1].reshape((28, 28)), cmap='gray')
+    ax5.imshow(produced_images[1].reshape((28, 28)), cmap='gray')
     plt.title('Sampled')
     ax6 = fig.add_subplot(2, 3, 6)
-    ax6.imshow(images[2].reshape((28, 28)), cmap='gray')
+    ax6.imshow(produced_images[2].reshape((28, 28)), cmap='gray')
     plt.title('Sampled')
 
     plt.savefig('figures/results_{}epoch.png'.format(epoch))
@@ -96,9 +92,7 @@ if __name__ == "__main__":
             batch_size=batch_size, shuffle=True)
 
     # train the model
-    for epoch in range(10):
-
-        print(epoch)
+    for epoch in range(num_epochs):
 
         for batch_idx, (labels, minibatch) in enumerate(train_loader):
 
@@ -120,8 +114,10 @@ if __name__ == "__main__":
                        100. * batch_idx / len(train_loader), loss.item()))
 
             # Visualize
-            samples = mdn.sample(pi, sigma, mu).int()
-            images = samples[0:3]
-
             if batch_idx == 0:
+                samples = mdn.sample(pi, sigma, mu).int()
+                images = samples[0:3]
                 plot(gt, images, epoch)
+
+
+    print("The training is compelete! \nVisualization results have been saved in the folder 'figures'")
